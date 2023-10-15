@@ -3,7 +3,7 @@ use std::{
     thread,
 };
 
-pub struct ThreadPool{
+pub struct ThreadPool {
     //threads: Vec<thread::JoinHandle<()>>,
     workers: Vec<Worker>,
     sender: Option<mpsc::Sender<Job>>,
@@ -17,7 +17,7 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>> ) -> Worker{
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv();
 
@@ -42,30 +42,32 @@ impl Worker {
 }
 impl ThreadPool {
     /// Create a new ThreadPool
-    /// 
+    ///
     /// The siez is the number of treads in the pool
-    /// 
+    ///
     ///  # Panics
-    /// 
+    ///
     /// The `new` function will panic if the size is zero
     pub fn new(size: usize) -> ThreadPool {
-        assert!(size>0);
+        assert!(size > 0);
         let (sender, receiver) = mpsc::channel();
-        
-        let receiver: Arc<Mutex<mpsc::Receiver<Job>>> = Arc::new(Mutex::new(receiver));
 
+        let receiver: Arc<Mutex<mpsc::Receiver<Job>>> = Arc::new(Mutex::new(receiver));
 
         let mut workers: Vec<Worker> = Vec::with_capacity(size);
         for id in 0..size {
             //threads.push(thread::JoinHandle);
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
-        ThreadPool {  workers, sender: Some(sender) }
+        ThreadPool {
+            workers,
+            sender: Some(sender),
+        }
     }
-    pub fn execute<F>(&self, f: F) 
+    pub fn execute<F>(&self, f: F)
     where
-        F: FnOnce() + Send + 'static
-    {   
+        F: FnOnce() + Send + 'static,
+    {
         let job = Box::new(f);
         self.sender.as_ref().unwrap().send(job).unwrap();
     }
